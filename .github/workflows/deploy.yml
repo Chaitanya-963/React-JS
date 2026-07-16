@@ -1,0 +1,52 @@
+name: Build and Deploy Nested Vite Site to GitHub Pages
+
+on:
+  push:
+    branches: ["main"] # Triggers compile tasks whenever changes land on main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Environment Backend
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Clean Install Modules
+        # Uses working-directory parameters to run commands inside your subdirectory
+        run: bun install
+        working-directory: React-Build/01_WebDesign
+
+      - name: Compile Distribution Asset Bundle
+        run: bun run build
+        working-directory: React-Build/01_WebDesign
+
+      - name: Setup Pages Routing Core
+        uses: actions/configure-pages@v5
+
+      - name: Upload Static Dist Build Assets
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Points directly to the dist output folder inside your directory layout
+          path: 'React-Build/01_WebDesign/dist'
+
+      - name: Deploy Live Assets to Pages Instance
+        id: deployment
+        uses: actions/deploy-pages@v4
